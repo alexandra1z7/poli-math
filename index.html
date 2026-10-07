@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Poli Math Trainer</title>
+
+<style>
+body {
+  font-family: system-ui, sans-serif;
+  background: #0f172a;
+  color: #e5e7eb;
+  padding: 20px;
+  max-width: 100%;
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.controls {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+input {
+    padding: 6px;
+    width: 90px;
+    border-radius: 6px;
+    border: none;
+}
+
+button {
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: none;
+    background: #38bdf8;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+button:hover {
+    background: #0ea5e9;
+}
+
+.layout {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 20px;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+}
+
+#output {
+  overflow-y: auto;
+  max-height: 100%;
+}
+
+/* ===== LEFT ===== */
+
+.chapter {
+    background: #020617;
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 15px;
+}
+
+.ex {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 0;
+}
+
+/* Prevent text selection inside exercise rows and progress cells */
+.ex, .ex * , .exercise, .exercise * {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.ex-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px 12px;
+}
+
+.tag {
+    font-size: 12px;
+    padding: 2px 6px;
+    border-radius: 6px;
+    margin-right: 6px;
+}
+
+.A { background: #22c55e; }
+.B { background: #facc15; color: #000; }
+.C { background: #ef4444; }
+
+.actions button {
+    margin-left: 5px;
+    background: #334155;
+    color: white;
+}
+
+.actions button:hover {
+    background: #475569;
+}
+
+/* ===== RIGHT PANEL ===== */
+
+#progress {
+    background: #020617;
+    border-radius: 10px;
+    padding: 10px;
+    max-height: 85vh;
+    overflow-y: auto;
+    width: 100%;
+}
+
+/* grid cu capitole */
+.progress-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+}
+
+
+.progress-chapter {
+    background: #020617;
+    border: 1px solid #1e293b;
+    border-radius: 8px;
+    padding: 6px;
+}
+
+.progress-chapter h4 {
+    margin: 4px 0 6px;
+    font-size: 13px;
+    text-align: center;
+}
+
+/* grid exerciții */
+.exercise-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(28px, 1fr));
+    gap: 4px;
+}
+
+.exercise {
+    text-align: center;
+    padding: 3px 0;
+    border-radius: 4px;
+    background: #1e293b;
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.exercise.done {
+    background: #22c55e;
+    color: black;
+}
+.exercise.question {
+  background: #facc15;
+  color: #000;
+}
+
+/* Responsive tweaks for smaller screens */
+@media (max-width: 900px) {
+  body {
+    padding: 12px;
+  }
+  h1 {
+    font-size: 22px;
+    margin-bottom: 8px;
+  }
+  .controls {
+    gap: 8px;
+  }
+  input {
+    width: 80px;
+  }
+  .layout {
+    grid-template-columns: 1fr;
+  }
+  #output {
+    max-height: none;
+  }
+  #progress {
+    max-height: none;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<h1>📘 Poli Math Trainer</h1>
+
+<div class="controls">
+  <div>
+    <label for="x">Exercises per chapter (random):</label>
+    <input type="number" id="x" value="6" min="1" step="1" title="How many exercises to draw randomly from each chapter">
+  </div>
+    <button onclick="generate()" title="Generate a new set of exercises">Generate</button>
+    <button onclick="resetAll()" title="Clear progress and reset the screen">Reset all</button>
+</div>
+
+<div class="layout">
+  <div id="output"></div>
+  <div id="progress"></div>
+</div>
+
+<script>
+// ================== CONFIG ==================
+
+const chapters = [
+  {
+    name: "1.1 Multimi, functii. Functia de gradul al doilea",
+    ranges: {
+      A: [1, 84],
+      B: [85, 144],
+      C: [145, 188]
+    }
+  },
+  {
+    name: "1.2 Functia exponentiala si logaritmica",
+    ranges: {
+      A: [189, 220],
+      B: [221, 243],
+      C: [244, 258]
+    }
+  },
+  {
+    name: "1.3 Numere complexe. Inductie si combinatorica",
+    ranges: {
+      A: [259, 306],
+      B: [307, 349],
+      C: [350, 371]
+    }
+  },
+  {
+    name: "1.4 Matrice. Determinanti. Sisteme liniare",
+    ranges: {
+      A: [372, 418],
+      B: [419, 440],
+      C: [441, 460]
+    }
+  },
+  {
+    name: "1.5 Structuri algebrice",
+    ranges: {
+      A: [461, 488],
+      B: [489, 514],
+      C: [515, 531]
+    }
+  },
+  {
+    name: "2.1 Numere reale. Progresii, sisuri",
+    ranges: {
+      A: [532, 560],
+      B: [561, 573],
+      C: [574, 581]
+    }
+  },
+  {
+    name: "2.2 Limite",
+    ranges: {
+      A: [582, 609],
+      B: [610, 648],
+      C: [649, 669]
+    }
+  },
+  {
+    name: "2.3 Functii continue",
+    ranges: {
+      A: [670, 687],
+      B: [688, 704],
+      C: [705, 721]
+    }
+  },
+  {
+    name: "2.4 Derivabilitate",
+    ranges: {
+      A: [722, 746],
+      B: [747, 762],
+      C: [763, 779]
+    }
+  },
+  {
+    name: "2.5 Studiul functiilor cu ajutorul derivatei",
+    ranges: {
+      A: [780, 806],
+      B: [807, 833],
+      C: [834, 852]
+    }
+  },
+  {
+    name: "2.6 Grafice de functii",
+    ranges: {
+      A: [853, 888],
+      B: [889, 914],
+      C: [915, 930]
+    }
+  },
+  {
+    name: "2.7 Primitive",
+    ranges: {
+      A: [931, 967],
+      B: [968, 979],
+      C: [980, 989]
+    }
+  },
+  {
+    name: "2.8 Integrale definite",
+    ranges: {
+      A: [990, 1028],
+      B: [1029, 1049],
+      C: [1050, 1070]
+    }
+  }
+];
+
+// ================== HELPERS ==================
+
+const keyOf = (ex) => `${ex.chapter}-${ex.number}`;
+const isDone = (key) => localStorage.getItem(key) === "done";
+const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
+
+// ================== DATA ==================
+
+function generateExercises(chapter) {
+  let list = [];
+  for (const lvl in chapter.ranges) {
+    const [s, e] = chapter.ranges[lvl];
+    for (let i = s; i <= e; i++) {
+      list.push({ chapter: chapter.name, number: i, level: lvl });
+    }
+  }
+  return list;
+}
+
+function pickRandomForChapter(chapter, count) {
+  const pool = generateExercises(chapter).filter(ex => !isDone(keyOf(ex)));
+  return shuffle(pool).slice(0, count);
+}
+
+// ================== UI ==================
+
+function generate() {
+  const total = Math.max(1, +x.value || 0);
+
+  output.innerHTML = "";
+
+  chapters.forEach(ch => {
+    const list = pickRandomForChapter(ch, total);
+    if (!list.length) return;
+
+    const box = document.createElement("div");
+    box.className = "chapter";
+    box.innerHTML = `<h3>${ch.name}</h3>`;
+
+    list.forEach(ex => {
+      const row = document.createElement("div");
+      row.className = "ex";
+      const code = `${ex.chapter.split(".")[0]}.${ex.number}${ex.level}`;
+      row.innerHTML = `
+        <div><span class="tag ${ex.level}">${ex.level}</span>${code}</div>
+        <div class="actions">
+          <button onclick="markDone(this,'${keyOf(ex)}')">✔</button>
+          <button onclick="markQuestion(this,'${keyOf(ex)}')">❓</button>
+        </div>`;
+      box.appendChild(row);
+    });
+
+    output.appendChild(box);
+  });
+
+  buildProgressPanel();
+}
+
+function removeChapterIfEmpty(el){
+  const chapter = el.closest(".chapter");
+  if (chapter && chapter.querySelectorAll(".ex").length === 0) {
+    chapter.remove();
+  }
+}
+
+function removeAllEmptyChapters(){
+  document.querySelectorAll("#output .chapter").forEach(ch => {
+    if (ch.querySelectorAll(".ex").length === 0) ch.remove();
+  });
+}
+
+function markDone(btn,key){
+  localStorage.setItem(key,"done");
+  const row = btn.closest(".ex");
+  row.remove();
+  removeChapterIfEmpty(row);
+  removeAllEmptyChapters();
+  buildProgressPanel();
+}
+
+function markQuestion(btn,key){
+  localStorage.setItem(key,"question");
+  const row = btn.closest(".ex");
+  row.remove();
+  removeChapterIfEmpty(row);
+  removeAllEmptyChapters();
+  buildProgressPanel();
+}
+
+function resetAll(){
+  if(confirm("Ștergi TOT progresul?")){
+    localStorage.clear();
+    output.innerHTML="";
+    buildProgressPanel();
+  }
+}
+
+// ================== PROGRESS PANEL ==================
+
+function buildProgressPanel() {
+  progress.innerHTML = "<h3>📊 Progress</h3>";
+  const grid = document.createElement("div");
+  grid.className = "progress-grid";
+
+  chapters.forEach(ch => {
+    const card = document.createElement("div");
+    card.className = "progress-chapter";
+    card.innerHTML = `<h4>${ch.name}</h4>`;
+    const list = document.createElement("div");
+    list.className = "exercise-list";
+
+    for (const lvl in ch.ranges) {
+      const [s,e] = ch.ranges[lvl];
+      for (let i=s;i<=e;i++){
+        const key = `${ch.name}-${i}`;
+        const status = localStorage.getItem(key);
+        const el = document.createElement("div");
+        el.className = "exercise" + (status === "done" ? " done" : status === "question" ? " question" : "");
+        el.textContent = i;
+        el.addEventListener('click', () => {
+          const current = localStorage.getItem(key);
+          let next;
+          if (current === 'done') next = 'question';
+          else if (current === 'question') next = null;
+          else next = 'done';
+
+          if (next) localStorage.setItem(key, next);
+          else localStorage.removeItem(key);
+
+          el.classList.remove('done', 'question');
+          if (next === 'done') el.classList.add('done');
+          else if (next === 'question') el.classList.add('question');
+        });
+        list.appendChild(el);
+      }
+    }
+
+    card.appendChild(list);
+    grid.appendChild(card);
+  });
+
+  progress.appendChild(grid);
+}
+
+// Auto-generate a set on load
+document.addEventListener("DOMContentLoaded", generate);
+</script>
+
+</body>
+</html>
